@@ -98,7 +98,7 @@ jobs:
     - name: 📥 Download All Artifacts
       uses: actions/download-artifact@v4
         with:
-        path: artifacts
+            path: artifacts
 
     - name: 📦 Prepare Release Assets
     run: |
