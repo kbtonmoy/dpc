@@ -62,7 +62,7 @@ jobs:
         echo "Working directory:"
         pwd
         echo "Files in directory:"
-        ls -la
+        python -c "import os; print('\n'.join(os.listdir('.')))"
 
     - name: 🏗️ Build Application (Windows)
       if: matrix.platform == 'windows'
@@ -82,18 +82,24 @@ jobs:
     - name: 📂 List Build Output
       run: |
         echo "Contents of dist folder:"
-        ls -la dist/
+        python -c "import os; print('\n'.join(os.listdir('dist')) if os.path.exists('dist') else 'dist folder not found')"
 
     - name: ✅ Verify Build
       run: |
-        if [ -f "dist/${{ matrix.output_name }}" ]; then
-          echo "✅ Build successful!"
-          echo "File size: $(stat -c%s dist/${{ matrix.output_name }} 2>/dev/null || stat -f%z dist/${{ matrix.output_name }}) bytes"
-        else
-          echo "❌ Build failed - executable not found"
-          exit 1
-        fi
-      shell: bash
+        python -c "
+        import os
+        import sys
+        output_name = '${{ matrix.output_name }}'
+        dist_path = os.path.join('dist', output_name)
+        if os.path.exists(dist_path):
+            size = os.path.getsize(dist_path)
+            print(f'✅ Build successful!')
+            print(f'File size: {size} bytes ({size/(1024*1024):.1f} MB)')
+            sys.exit(0)
+        else:
+            print(f'❌ Build failed - executable not found: {dist_path}')
+            sys.exit(1)
+        "
 
     - name: 📤 Upload Artifacts
       uses: actions/upload-artifact@v4
@@ -115,14 +121,45 @@ jobs:
 
     - name: 📦 Prepare Release Assets
       run: |
-        mkdir release-assets
-        cp artifacts/PressureVesselCalculator-windows/PressureVesselCalculator.exe release-assets/PressureVesselCalculator-Windows.exe
-        cp artifacts/PressureVesselCalculator-macos/PressureVesselCalculator release-assets/PressureVesselCalculator-macOS
-        cp artifacts/PressureVesselCalculator-linux/PressureVesselCalculator release-assets/PressureVesselCalculator-Linux
-        chmod +x release-assets/PressureVesselCalculator-macOS
-        chmod +x release-assets/PressureVesselCalculator-Linux
-        echo "Release assets:"
-        ls -la release-assets/
+        python -c "
+        import os
+        import shutil
+        import stat
+        
+        # Create release assets directory
+        os.makedirs('release-assets', exist_ok=True)
+        
+        # Copy and rename files
+        artifacts = {
+            'artifacts/PressureVesselCalculator-windows/PressureVesselCalculator.exe': 'release-assets/PressureVesselCalculator-Windows.exe',
+            'artifacts/PressureVesselCalculator-macos/PressureVesselCalculator': 'release-assets/PressureVesselCalculator-macOS',
+            'artifacts/PressureVesselCalculator-linux/PressureVesselCalculator': 'release-assets/PressureVesselCalculator-Linux'
+        }
+        
+        for src, dst in artifacts.items():
+            if os.path.exists(src):
+                shutil.copy2(src, dst)
+                print(f'Copied: {src} -> {dst}')
+                
+                # Make executable for Unix systems
+                if 'macOS' in dst or 'Linux' in dst:
+                    try:
+                        current_permissions = os.stat(dst).st_mode
+                        os.chmod(dst, current_permissions | stat.S_IEXEC)
+                        print(f'Made executable: {dst}')
+                    except:
+                        pass  # Skip if chmod fails
+            else:
+                print(f'Warning: {src} not found')
+        
+        # List release assets
+        print('Release assets:')
+        if os.path.exists('release-assets'):
+            for item in os.listdir('release-assets'):
+                path = os.path.join('release-assets', item)
+                size = os.path.getsize(path) / (1024*1024)
+                print(f'  {item} ({size:.1f} MB)')
+        "
 
     - name: 🚀 Create GitHub Release
       uses: softprops/action-gh-release@v2
