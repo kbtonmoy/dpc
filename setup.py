@@ -108,11 +108,11 @@ jobs:
         dist_path = os.path.join('dist', output_name)
         if os.path.exists(dist_path):
             size = os.path.getsize(dist_path)
-            print(f'✅ Build successful!')
+            print('Build successful!')
             print(f'File size: {size} bytes ({size/(1024*1024):.1f} MB)')
             sys.exit(0)
         else:
-            print(f'❌ Build failed - executable not found: {dist_path}')
+            print(f'Build failed - executable not found: {dist_path}')
             sys.exit(1)
         "
 
