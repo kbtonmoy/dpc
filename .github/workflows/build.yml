@@ -28,7 +28,7 @@ jobs:
     steps:
     - name: 📥 Checkout Code
       uses: actions/checkout@v4
-    
+
     - name: 🐍 Set up Python
       uses: actions/setup-python@v5
       with:
@@ -52,6 +52,18 @@ jobs:
         pip install requests>=2.28.0
         pip install Pillow>=9.0.0
 
+    - name: 🔍 Debug Info
+      run: |
+        echo "Platform: ${{ matrix.platform }}"
+        echo "Python version:"
+        python --version
+        echo "PyInstaller version:"
+        pyinstaller --version
+        echo "Working directory:"
+        pwd
+        echo "Files in directory:"
+        ls -la
+
     - name: 🏗️ Build Application (Windows)
       if: matrix.platform == 'windows'
       run: |
@@ -67,12 +79,27 @@ jobs:
       run: |
         pyinstaller --clean --onefile --name "PressureVesselCalculator" --hidden-import customtkinter --hidden-import tkinter --hidden-import tkinter.filedialog --hidden-import tkinter.messagebox --hidden-import PIL._tkinter_finder pressure_vessel_app.py
 
+    - name: 📂 List Build Output
+      run: |
+        echo "Contents of dist folder:"
+        ls -la dist/
+
+    - name: ✅ Verify Build
+      run: |
+        if [ -f "dist/${{ matrix.output_name }}" ]; then
+          echo "✅ Build successful!"
+          echo "File size: $(stat -c%s dist/${{ matrix.output_name }} 2>/dev/null || stat -f%z dist/${{ matrix.output_name }}) bytes"
+        else
+          echo "❌ Build failed - executable not found"
+          exit 1
+        fi
+      shell: bash
+
     - name: 📤 Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: PressureVesselCalculator-${{ matrix.platform }}
-        path: |
-          dist/${{ matrix.output_name }}
+        path: dist/${{ matrix.output_name }}
         retention-days: 30
 
   release:
@@ -82,18 +109,20 @@ jobs:
     
     steps:
     - name: 📥 Download All Artifacts
-        uses: actions/download-artifact@v4
-        with:
-            path: artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
 
     - name: 📦 Prepare Release Assets
-    run: |
+      run: |
         mkdir release-assets
-        cp artifacts/PressureVesselCalculator-windows/PressureVesselCalculator.exe release-assets/
-        cp artifacts/PressureVesselCalculator-macos/PressureVesselCalculator release-assets/
-        cp artifacts/PressureVesselCalculator-linux/PressureVesselCalculator release-assets/
+        cp artifacts/PressureVesselCalculator-windows/PressureVesselCalculator.exe release-assets/PressureVesselCalculator-Windows.exe
+        cp artifacts/PressureVesselCalculator-macos/PressureVesselCalculator release-assets/PressureVesselCalculator-macOS
+        cp artifacts/PressureVesselCalculator-linux/PressureVesselCalculator release-assets/PressureVesselCalculator-Linux
         chmod +x release-assets/PressureVesselCalculator-macOS
         chmod +x release-assets/PressureVesselCalculator-Linux
+        echo "Release assets:"
+        ls -la release-assets/
 
     - name: 🚀 Create GitHub Release
       uses: softprops/action-gh-release@v2
@@ -107,13 +136,29 @@ jobs:
           **Cross-platform builds available:**
           
           ### 🪟 Windows
-          - `PressureVesselCalculator-Windows.exe` - Ready to run
+          - `PressureVesselCalculator-Windows.exe` - Ready to run executable
           
           ### 🍎 macOS
-          - `PressureVesselCalculator-macOS` - Make executable and run
+          - `PressureVesselCalculator-macOS` - Make executable with `chmod +x` and run
           
           ### 🐧 Linux
-          - `PressureVesselCalculator-Linux` - Make executable and run
+          - `PressureVesselCalculator-Linux` - Make executable with `chmod +x` and run
+          
+          **Features:**
+          - AI-enhanced PDF analysis
+          - Cost calculation and Excel export  
+          - Email integration
+          - Modern UI with dark/light themes
+          
+          **Requirements:**
+          - No additional dependencies needed (everything bundled)
+          - Internet connection for AI features
+          - OpenAI API key for enhanced analysis
+          
+          **Installation:**
+          1. Download the appropriate file for your platform
+          2. Run the executable
+          3. Follow the setup wizard
           
           Built automatically with GitHub Actions ✨
       env:

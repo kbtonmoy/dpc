@@ -16,9 +16,12 @@ parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
 # PyInstaller
 *.manifest
@@ -29,30 +32,41 @@ venv/
 env/
 ENV/
 build_env/
+.venv/
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
 # macOS
 .DS_Store
 .AppleDouble
 .LSOverride
 Icon?
+._*
 
 # Windows
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+$RECYCLE.BIN/
 
-# Settings
+# Application specific
 .pressure_vessel_app_settings.json
-
-# Logs
 *.log
-
-# Test files
-test_*.py
 temp_*
+test_*.py
+
+# Build artifacts
+*.dmg
+*.zip
+release-assets/
+artifacts/
+
+# Temporary icon files
+icon.png
+icon_large.png
+MyIcon.iconset/
